@@ -138,11 +138,25 @@ document.addEventListener('DOMContentLoaded', function() {
             // Make the AI request
             const response = await puter.ai.chat(prompt, { model: aiModel });
             
+            // Handle different response formats from Puter.js
+            let resultText = '';
+            if (typeof response === 'string') {
+                resultText = response;
+            } else if (response && typeof response.text === 'string') {
+                resultText = response.text;
+            } else if (response && typeof response.content === 'string') {
+                resultText = response.content;
+            } else {
+                // Convert to string as a fallback
+                resultText = String(response || 'No response received');
+                console.log('Unexpected response format:', response);
+            }
+            
             // Store the result
-            WikiTruth.comparisonResults[mode] = response;
+            WikiTruth.comparisonResults[mode] = resultText;
             
             // Display the result
-            contentElement.innerHTML = `<div class="result-text">${formatOutput(response)}</div>`;
+            contentElement.innerHTML = `<div class="result-text">${formatOutput(resultText)}</div>`;
             
             // Show sharing options
             if (shareElement) {
@@ -186,6 +200,13 @@ document.addEventListener('DOMContentLoaded', function() {
      * @returns {string} - Formatted HTML
      */
     function formatOutput(text) {
+        // Ensure text is a string
+        if (typeof text !== 'string') {
+            console.warn('formatOutput received non-string input:', text);
+            // Convert to string if possible
+            text = String(text || '');
+        }
+        
         // Convert line breaks to HTML
         let formatted = text.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>');
         

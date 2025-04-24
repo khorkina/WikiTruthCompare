@@ -44,6 +44,11 @@ document.addEventListener('DOMContentLoaded', function() {
             // Get content
             let content = WikiTruth.comparisonResults[mode];
             
+            // Ensure content is a string
+            if (typeof content !== 'string') {
+                content = String(content || '');
+            }
+            
             // Create a text version of the content (simple conversion)
             content = content.replace(/<p>/g, '').replace(/<\/p>/g, '\n\n').replace(/<br>/g, '\n');
             

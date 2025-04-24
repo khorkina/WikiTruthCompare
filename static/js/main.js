@@ -32,9 +32,23 @@ const WikiTruth = {
             // We're using Puter.js here to simulate translation for demo purposes
             const prompt = `Translate the following text to ${targetLang}:\n\n${text}`;
             
-            const translatedText = await puter.ai.chat(prompt, {
+            const response = await puter.ai.chat(prompt, {
                 model: "gpt-4o"
             });
+            
+            // Handle different response formats from Puter.js
+            let translatedText = '';
+            if (typeof response === 'string') {
+                translatedText = response;
+            } else if (response && typeof response.text === 'string') {
+                translatedText = response.text;
+            } else if (response && typeof response.content === 'string') {
+                translatedText = response.content;
+            } else {
+                // Convert to string as a fallback
+                translatedText = String(response || text);
+                console.log('Unexpected translation response format:', response);
+            }
             
             return translatedText;
         } catch (error) {
