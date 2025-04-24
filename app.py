@@ -24,7 +24,7 @@ def index():
 
 @app.route('/search')
 def search():
-    """API endpoint for searching Wikipedia articles"""
+    """API endpoint for searching Wikipedia articles with improved handling"""
     query = request.args.get('q', '')
     lang = request.args.get('lang', 'en')
     
@@ -32,36 +32,46 @@ def search():
         return jsonify([])
     
     try:
-        # Build the API URL for Wikipedia search
+        # Build the API URL for Wikipedia search - using more comprehensive search
         params = {
-            'action': 'opensearch',
-            'search': query,
-            'limit': 10,
-            'namespace': 0,
+            'action': 'query',
+            'list': 'search',
+            'srsearch': query,
+            'srlimit': 10,
             'format': 'json',
+            'srprop': 'snippet|titlesnippet',
         }
         
         # Use the appropriate language-specific Wikipedia API endpoint
         api_endpoint = f"https://{lang}.wikipedia.org/w/api.php"
         
         response = requests.get(api_endpoint, params=params)
+        response.raise_for_status()  # Raise exception for 4XX/5XX responses
         data = response.json()
         
-        # Format results: data[0] is the search term, data[1] is article titles,
-        # data[2] is descriptions, data[3] is URLs
+        # Extract and format search results
         results = []
-        for i in range(len(data[1])):
-            article_title = data[1][i]
-            article_url = data[3][i]
+        if 'query' in data and 'search' in data['query']:
+            search_results = data['query']['search']
             
-            # Extract the article's path from URL for later use
-            article_path = article_url.split('/wiki/')[1] if '/wiki/' in article_url else article_title
-            
-            results.append({
-                'title': article_title,
-                'url': article_url,
-                'path': article_path
-            })
+            for article in search_results:
+                title = article.get('title', '')
+                
+                # Create properly encoded article path
+                # Use URL quote to handle special characters properly
+                article_path = quote(title.replace(' ', '_'), safe='')
+                
+                # Get article URL
+                article_url = f"https://{lang}.wikipedia.org/wiki/{article_path}"
+                
+                # Add to results
+                results.append({
+                    'title': title,
+                    'url': article_url,
+                    'path': article_path,
+                    'snippet': article.get('snippet', ''),
+                    'lang': lang
+                })
         
         return jsonify(results)
     
@@ -69,56 +79,98 @@ def search():
         logger.error(f"Error searching Wikipedia: {str(e)}")
         return jsonify({'error': str(e)}), 500
 
-@app.route('/languages/<article_path>')
+@app.route('/languages/<path:article_path>')
 def get_languages(article_path):
-    """Get available language versions for a specific article"""
+    """Get available language versions for a specific article with improved handling"""
     try:
+        # First decode URL-encoded characters in article path
+        article_path = article_path.strip()
+        article_title = article_path.replace('_', ' ')
+        
+        # Get source language from query parameter or default to English
+        source_lang = request.args.get('lang', 'en')
+        
         # Build the API URL for Wikipedia langlinks
         params = {
             'action': 'query',
-            'titles': article_path.replace('_', ' '),
+            'titles': article_title,
             'prop': 'langlinks',
-            'lllimit': 500,
+            'lllimit': 500,  # Maximum number of languages to retrieve
             'format': 'json',
         }
         
-        response = requests.get(WIKIPEDIA_API_ENDPOINT, params=params)
+        # Use the appropriate language-specific Wikipedia API endpoint
+        api_endpoint = f"https://{source_lang}.wikipedia.org/w/api.php"
+        
+        response = requests.get(api_endpoint, params=params)
+        response.raise_for_status()  # Raise exception for 4XX/5XX responses
         data = response.json()
         
         # Store the article information in the session
         session['article'] = {
-            'title': article_path.replace('_', ' '),
-            'path': article_path
+            'title': article_title,
+            'path': article_path,
+            'source_lang': source_lang
         }
         
         # Extract language links
         pages = data.get('query', {}).get('pages', {})
         if not pages:
-            return jsonify({'error': 'Article not found'}), 404
+            return render_template('error.html', 
+                                  error_title="Article Not Found",
+                                  error_message=f"Could not find article '{article_title}' in {source_lang.upper()} Wikipedia.")
         
-        # Get the first (and only) page
+        # Check for negative page ID (indicates article doesn't exist)
         page_id = list(pages.keys())[0]
+        if int(page_id) < 0:
+            return render_template('error.html', 
+                                  error_title="Article Not Found",
+                                  error_message=f"Could not find article '{article_title}' in {source_lang.upper()} Wikipedia.")
+        
         page = pages[page_id]
         
-        # Include English (source language) in the list
-        languages = [{'lang': 'en', 'title': page.get('title', article_path.replace('_', ' '))}]
+        # Get the canonical title from the API response
+        canonical_title = page.get('title', article_title)
+        
+        # Include the source language in the list
+        lang_name_map = {
+            'en': 'English', 'es': 'Spanish', 'fr': 'French', 'de': 'German', 
+            'ru': 'Russian', 'zh': 'Chinese', 'ja': 'Japanese', 'ar': 'Arabic',
+            'hi': 'Hindi', 'pt': 'Portuguese', 'it': 'Italian', 'ko': 'Korean'
+        }
+        
+        languages = [{
+            'lang': source_lang, 
+            'title': canonical_title,
+            'name': lang_name_map.get(source_lang, source_lang.upper())
+        }]
         
         # Add other languages
         langlinks = page.get('langlinks', [])
         for lang in langlinks:
+            lang_code = lang.get('lang', '')
             languages.append({
-                'lang': lang.get('lang', ''),
-                'title': lang.get('*', '')
+                'lang': lang_code,
+                'title': lang.get('*', ''),
+                'name': lang_name_map.get(lang_code, lang_code.upper())
             })
+        
+        # Sort languages by name (with source language first)
+        source_lang_obj = languages[0]
+        other_langs = sorted(languages[1:], key=lambda x: x['name'])
+        languages = [source_lang_obj] + other_langs
         
         # Return the template with languages
         return render_template('languages.html', 
-                              article_title=article_path.replace('_', ' '),
+                              article_title=canonical_title,
+                              source_lang=source_lang,
                               languages=languages)
     
     except Exception as e:
         logger.error(f"Error getting language versions: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return render_template('error.html', 
+                              error_title="Error",
+                              error_message=f"Failed to retrieve language versions: {str(e)}")
 
 @app.route('/compare', methods=['POST'])
 def compare_articles():

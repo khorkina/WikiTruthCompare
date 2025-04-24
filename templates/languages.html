@@ -10,18 +10,42 @@
             <div class="card-body">
                 <h5 class="card-title mb-3">Select languages to compare</h5>
                 
-                <div class="row">
+                <div class="row mb-3">
+                    <div class="col-md-6 offset-md-3">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            <input type="text" id="lang-filter" class="form-control" placeholder="Filter languages...">
+                        </div>
+                        <div class="form-text text-center">
+                            Found <span id="lang-count">{{ languages|length }}</span> languages for this article
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="row" id="languages-container">
                     {% for lang in languages %}
-                    <div class="col-md-3 col-sm-4 mb-3">
+                    <div class="col-md-3 col-sm-4 mb-3 language-item" data-lang="{{ lang.lang }}">
                         <div class="form-check">
                             <input class="form-check-input language-checkbox" type="checkbox" name="languages" 
                                 id="lang-{{ lang.lang }}" value="{{ lang.lang }}|{{ lang.title }}">
                             <label class="form-check-label" for="lang-{{ lang.lang }}">
-                                {{ lang.lang | upper }} - {{ lang.title }}
+                                <span class="lang-code">{{ lang.lang | upper }}</span> - <span class="lang-title">{{ lang.title }}</span>
                             </label>
                         </div>
                     </div>
                     {% endfor %}
+                </div>
+                
+                <div class="text-center mb-3 mt-3">
+                    <button type="button" id="select-all-btn" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-check-square me-1"></i> Select All
+                    </button>
+                    <button type="button" id="deselect-all-btn" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-square me-1"></i> Deselect All
+                    </button>
+                    <button type="button" id="select-popular-btn" class="btn btn-outline-secondary btn-sm">
+                        <i class="fas fa-star me-1"></i> Popular Languages
+                    </button>
                 </div>
                 
                 <div class="alert alert-warning selection-warning d-none mt-3">
@@ -43,11 +67,107 @@
         const compareBtn = document.getElementById('compare-btn');
         const checkboxes = document.querySelectorAll('.language-checkbox');
         const warningAlert = document.querySelector('.selection-warning');
+        const langFilterInput = document.getElementById('lang-filter');
+        const langCountElement = document.getElementById('lang-count');
+        const languageItems = document.querySelectorAll('.language-item');
+        const selectAllBtn = document.getElementById('select-all-btn');
+        const deselectAllBtn = document.getElementById('deselect-all-btn');
+        const selectPopularBtn = document.getElementById('select-popular-btn');
+        
+        // Popular language codes - common Wikipedia languages
+        const popularLanguages = ['en', 'es', 'fr', 'de', 'ru', 'zh', 'ja', 'ar', 'pt', 'it'];
         
         // Preselect English if available
         const englishCheckbox = document.getElementById('lang-en');
         if (englishCheckbox) {
             englishCheckbox.checked = true;
+        }
+        
+        // Filter languages function
+        function filterLanguages(query) {
+            query = query.toLowerCase().trim();
+            let visibleCount = 0;
+            
+            languageItems.forEach(item => {
+                const langCode = item.querySelector('.lang-code').textContent.toLowerCase();
+                const langTitle = item.querySelector('.lang-title').textContent.toLowerCase();
+                
+                if (query === '' || langCode.includes(query) || langTitle.includes(query)) {
+                    item.style.display = '';
+                    visibleCount++;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+            
+            // Update count display
+            langCountElement.textContent = visibleCount;
+            return visibleCount;
+        }
+        
+        // Add filter input handler
+        if (langFilterInput) {
+            langFilterInput.addEventListener('input', function() {
+                filterLanguages(this.value);
+            });
+            
+            // Clear filter on ESC key
+            langFilterInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    this.value = '';
+                    filterLanguages('');
+                    this.blur();
+                }
+            });
+        }
+        
+        // Select/Deselect All buttons
+        if (selectAllBtn) {
+            selectAllBtn.addEventListener('click', function() {
+                const visibleCheckboxes = Array.from(checkboxes).filter(
+                    checkbox => checkbox.closest('.language-item').style.display !== 'none'
+                );
+                visibleCheckboxes.forEach(checkbox => checkbox.checked = true);
+                if (visibleCheckboxes.length >= 2) {
+                    warningAlert.classList.add('d-none');
+                }
+            });
+        }
+        
+        if (deselectAllBtn) {
+            deselectAllBtn.addEventListener('click', function() {
+                const visibleCheckboxes = Array.from(checkboxes).filter(
+                    checkbox => checkbox.closest('.language-item').style.display !== 'none'
+                );
+                visibleCheckboxes.forEach(checkbox => checkbox.checked = false);
+                // Keep English selected if available
+                if (englishCheckbox) {
+                    englishCheckbox.checked = true;
+                }
+                warningAlert.classList.add('d-none');
+            });
+        }
+        
+        // Select popular languages
+        if (selectPopularBtn) {
+            selectPopularBtn.addEventListener('click', function() {
+                // First uncheck all
+                checkboxes.forEach(checkbox => checkbox.checked = false);
+                
+                // Then check popular languages that exist in our list
+                let selectedCount = 0;
+                popularLanguages.forEach(lang => {
+                    const langCheckbox = document.getElementById(`lang-${lang}`);
+                    if (langCheckbox) {
+                        langCheckbox.checked = true;
+                        selectedCount++;
+                    }
+                });
+                
+                if (selectedCount >= 2) {
+                    warningAlert.classList.add('d-none');
+                }
+            });
         }
         
         // Validate form submission
@@ -65,7 +185,6 @@
         checkboxes.forEach(checkbox => {
             checkbox.addEventListener('change', function() {
                 const selectedCount = document.querySelectorAll('.language-checkbox:checked').length;
-                
                 if (selectedCount >= 2) {
                     warningAlert.classList.add('d-none');
                 }
