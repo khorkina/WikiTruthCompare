@@ -5,6 +5,9 @@ import requests
 from urllib.parse import quote
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 
+# Import utility functions
+from utils import get_wikipedia_text_content, get_language_name
+
 # Initialize Flask app
 app = Flask(__name__)
 app.secret_key = os.environ.get("SESSION_SECRET", "wikitruth_default_secret")
@@ -132,17 +135,11 @@ def get_languages(article_path):
         # Get the canonical title from the API response
         canonical_title = page.get('title', article_title)
         
-        # Include the source language in the list
-        lang_name_map = {
-            'en': 'English', 'es': 'Spanish', 'fr': 'French', 'de': 'German', 
-            'ru': 'Russian', 'zh': 'Chinese', 'ja': 'Japanese', 'ar': 'Arabic',
-            'hi': 'Hindi', 'pt': 'Portuguese', 'it': 'Italian', 'ko': 'Korean'
-        }
-        
+        # Include the source language in the list using the utility function
         languages = [{
             'lang': source_lang, 
             'title': canonical_title,
-            'name': lang_name_map.get(source_lang, source_lang.upper())
+            'name': get_language_name(source_lang)
         }]
         
         # Add other languages
@@ -152,7 +149,7 @@ def get_languages(article_path):
             languages.append({
                 'lang': lang_code,
                 'title': lang.get('*', ''),
-                'name': lang_name_map.get(lang_code, lang_code.upper())
+                'name': get_language_name(lang_code)
             })
         
         # Sort languages by name (with source language first)
@@ -197,52 +194,19 @@ def compare_articles():
                     
                 lang, title = parts
                 
-                # Build API URL for fetching full article content (not just intro)
-                params = {
-                    'action': 'query',
-                    'prop': 'extracts',
-                    'explaintext': 1,       # Get plain text content
-                    'exsectionformat': 'plain', # Format sections as plain text
-                    'titles': title,
-                    'format': 'json',
-                }
+                # Get article content using trafilatura for better extraction
+                logger.info(f"Getting article content for {title} in {lang}")
                 
-                # For longer articles, don't limit to intro only
-                # If we're comparing full content, get more content
-                if len(selected_languages) <= 3:  # For fewer languages, get more content
-                    params.pop('exintro', None)  # Remove intro limitation if present
-                else:
-                    params['exintro'] = 1  # Limit to intro for many languages to prevent performance issues
+                # Use the trafilatura extraction function
+                extract = get_wikipedia_text_content(lang, title)
                 
-                api_endpoint = f"https://{lang}.wikipedia.org/w/api.php"
-                response = requests.get(api_endpoint, params=params)
-                response.raise_for_status()
-                data = response.json()
-                
-                # Extract content
-                pages = data.get('query', {}).get('pages', {})
-                if not pages:
-                    errors.append(f"No content found for {title} ({lang.upper()})")
+                # Check if we got content
+                if not extract or len(extract.strip()) < 50:
+                    errors.append(f"Failed to retrieve meaningful content for {title} ({lang.upper()})")
                     continue
                 
-                page_id = list(pages.keys())[0]
-                if int(page_id) < 0:  # Negative page ID means article doesn't exist
-                    errors.append(f"Article '{title}' not found in {lang.upper()} Wikipedia")
-                    continue
-                    
-                extract = pages[page_id].get('extract', '')
-                
-                # If extract is too short, it might indicate an issue
-                if len(extract) < 50:
-                    logger.warning(f"Very short content for {title} ({lang}): {len(extract)} chars")
-                
-                # Get language name for display
-                lang_name_map = {
-                    'en': 'English', 'es': 'Spanish', 'fr': 'French', 'de': 'German', 
-                    'ru': 'Russian', 'zh': 'Chinese', 'ja': 'Japanese', 'ar': 'Arabic',
-                    'hi': 'Hindi', 'pt': 'Portuguese', 'it': 'Italian', 'ko': 'Korean'
-                }
-                lang_name = lang_name_map.get(lang, lang.upper())
+                # Get proper language name for display
+                lang_name = get_language_name(lang)
                 
                 # Store content with language info
                 article_contents[lang] = {

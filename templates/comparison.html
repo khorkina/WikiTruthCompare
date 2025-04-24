@@ -227,7 +227,10 @@
                         {% for lang_code, article in article_contents.items() %}
                         <div class="col-md-6 mb-3">
                             <div class="article-card">
-                                <h4 class="article-language">{{ lang_code | upper }}: {{ article.title }}</h4>
+                                <h4 class="article-language">
+                                    {% if article.lang_name %}{{ article.lang_name }}{% else %}{{ lang_code | upper }}{% endif %}: 
+                                    {{ article.title }}
+                                </h4>
                                 <div class="article-preview">
                                     <p>{{ article.content[:300] }}{% if article.content|length > 300 %}...{% endif %}</p>
                                 </div>
