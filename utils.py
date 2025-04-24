@@ -29,8 +29,8 @@ def get_wikipedia_text_content(lang_code, article_title):
             logger.warning(f"Failed to download content from {url}")
             return ""
             
-        # Extract the main content
-        content = trafilatura.extract(downloaded, output_format='text', 
+        # Extract the main content (valid formats are: txt, json, xml, etc.)
+        content = trafilatura.extract(downloaded, 
                                       include_comments=False, 
                                       include_tables=True,
                                       include_links=False,

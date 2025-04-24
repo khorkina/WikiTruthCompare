@@ -2,11 +2,13 @@ import os
 import logging
 import json
 import requests
+import uuid
 from urllib.parse import quote
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 
 # Import utility functions
 from utils import get_wikipedia_text_content, get_language_name
+from article_cache import article_cache
 
 # Initialize Flask app
 app = Flask(__name__)
@@ -229,12 +231,21 @@ def compare_articles():
                                  error_title="Content Retrieval Error",
                                  error_message=error_msg)
         
-        # Store article contents in session for the comparison page
-        session['article_contents'] = article_contents
+        # Generate a unique cache key for this set of articles
+        lang_codes = list(article_contents.keys())
+        titles = [article_contents[lang]['title'] for lang in lang_codes]
         
-        # Store any warnings to show on the comparison page
-        if errors:
-            session['comparison_warnings'] = errors
+        # Generate a unique ID for this comparison
+        comparison_id = str(uuid.uuid4())
+        
+        # Store in cache instead of session
+        article_cache.set(comparison_id, {
+            'contents': article_contents,
+            'warnings': errors if errors else []
+        })
+        
+        # Store only the ID in session, not the full content
+        session['comparison_id'] = comparison_id
         
         # Redirect to the comparison page
         return redirect(url_for('show_comparison'))

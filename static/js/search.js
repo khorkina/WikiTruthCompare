@@ -98,12 +98,29 @@ document.addEventListener('DOMContentLoaded', function() {
         results.forEach(result => {
             const resultItem = document.createElement('div');
             resultItem.className = 'search-result-item';
-            resultItem.textContent = result.title;
+            
+            // Get the selected language name for display
+            const selectedLang = languageSelect ? languageSelect.value : 'en';
+            const langDisplay = document.createElement('span');
+            langDisplay.className = 'search-result-lang';
+            langDisplay.textContent = selectedLang.toUpperCase();
+            
+            // Create the title element
+            const titleElement = document.createElement('span');
+            titleElement.className = 'search-result-title';
+            titleElement.textContent = result.title;
+            
+            // Add both elements to the result item
+            resultItem.appendChild(langDisplay);
+            resultItem.appendChild(titleElement);
+            
+            // Store data for navigation
             resultItem.dataset.path = result.path;
             
             // Add click event to navigate to article languages
             resultItem.addEventListener('click', function() {
-                window.location.href = `/languages/${this.dataset.path}`;
+                const selectedLang = languageSelect ? languageSelect.value : 'en';
+                window.location.href = `/languages/${this.dataset.path}?lang=${selectedLang}`;
             });
             
             searchResults.appendChild(resultItem);
