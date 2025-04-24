@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mb-4">Available Languages for "{{ article_title }}"</h1>
+    <p class="lead mb-4">Select at least two languages to compare the article across different versions</p>
+    
+    <form action="{{ url_for('compare_articles') }}" method="POST">
+        <div class="language-selection card mb-4">
+            <div class="card-body">
+                <h5 class="card-title mb-3">Select languages to compare</h5>
+                
+                <div class="row">
+                    {% for lang in languages %}
+                    <div class="col-md-3 col-sm-4 mb-3">
+                        <div class="form-check">
+                            <input class="form-check-input language-checkbox" type="checkbox" name="languages" 
+                                id="lang-{{ lang.lang }}" value="{{ lang.lang }}|{{ lang.title }}">
+                            <label class="form-check-label" for="lang-{{ lang.lang }}">
+                                {{ lang.lang | upper }} - {{ lang.title }}
+                            </label>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="alert alert-warning selection-warning d-none mt-3">
+                    Please select at least two languages to compare.
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-center">
+            <button type="submit" id="compare-btn" class="btn btn-primary btn-lg">
+                <i class="fas fa-exchange-alt me-2"></i> Compare Articles
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const compareBtn = document.getElementById('compare-btn');
+        const checkboxes = document.querySelectorAll('.language-checkbox');
+        const warningAlert = document.querySelector('.selection-warning');
+        
+        // Preselect English if available
+        const englishCheckbox = document.getElementById('lang-en');
+        if (englishCheckbox) {
+            englishCheckbox.checked = true;
+        }
+        
+        // Validate form submission
+        document.querySelector('form').addEventListener('submit', function(event) {
+            const selectedCount = document.querySelectorAll('.language-checkbox:checked').length;
+            
+            if (selectedCount < 2) {
+                event.preventDefault();
+                warningAlert.classList.remove('d-none');
+                window.scrollTo(0, 0);
+            }
+        });
+        
+        // Hide warning when user selects languages
+        checkboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', function() {
+                const selectedCount = document.querySelectorAll('.language-checkbox:checked').length;
+                
+                if (selectedCount >= 2) {
+                    warningAlert.classList.add('d-none');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

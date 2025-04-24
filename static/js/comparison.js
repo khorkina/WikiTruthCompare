@@ -1,0 +1,272 @@
+/**
+ * WikiTruth - Comparison Functionality
+ * Handles article comparison using Puter.js and result display
+ */
+
+document.addEventListener('DOMContentLoaded', function() {
+    // Elements for different comparison modes
+    const summaryContent = document.getElementById('summary-content');
+    const fullContent = document.getElementById('full-content');
+    const funnyContent = document.getElementById('funny-content');
+    
+    // Language selection dropdowns
+    const summaryLanguageSelect = document.getElementById('summary-output-language');
+    const fullLanguageSelect = document.getElementById('full-output-language');
+    const funnyLanguageSelect = document.getElementById('funny-output-language');
+    
+    // Share option containers
+    const summaryShare = document.getElementById('summary-share');
+    const fullShare = document.getElementById('full-share');
+    const funnyShare = document.getElementById('funny-share');
+    
+    // Tab elements
+    const summaryTab = document.getElementById('summary-tab');
+    const fullTab = document.getElementById('full-tab');
+    const funnyTab = document.getElementById('funny-tab');
+    
+    // Get article content from the page
+    const articleElements = document.querySelectorAll('.article-card');
+    const articles = {};
+    
+    // Extract article contents
+    articleElements.forEach(element => {
+        const langTitle = element.querySelector('.article-language').textContent;
+        const langCode = langTitle.split(':')[0].trim().toLowerCase();
+        const title = langTitle.split(':')[1].trim();
+        const content = element.querySelector('.article-preview').textContent;
+        
+        articles[langCode] = {
+            title: title,
+            content: content
+        };
+    });
+    
+    // If we have articles to compare, start the comparison
+    if (Object.keys(articles).length >= 2) {
+        // Run comparisons in parallel
+        runComparison('summary');
+        
+        // Set up tab event listeners to load content as needed
+        fullTab.addEventListener('click', function() {
+            if (!WikiTruth.comparisonResults.full) {
+                runComparison('full');
+            }
+        });
+        
+        funnyTab.addEventListener('click', function() {
+            if (!WikiTruth.comparisonResults.funny) {
+                runComparison('funny');
+            }
+        });
+        
+        // Set up language change handlers
+        if (summaryLanguageSelect) {
+            summaryLanguageSelect.addEventListener('change', function() {
+                translateOutput('summary', this.value);
+            });
+        }
+        
+        if (fullLanguageSelect) {
+            fullLanguageSelect.addEventListener('change', function() {
+                translateOutput('full', this.value);
+            });
+        }
+        
+        if (funnyLanguageSelect) {
+            funnyLanguageSelect.addEventListener('change', function() {
+                translateOutput('funny', this.value);
+            });
+        }
+    }
+    
+    /**
+     * Run article comparison using Puter.js
+     * @param {string} mode - Comparison mode: 'summary', 'full', or 'funny'
+     */
+    async function runComparison(mode) {
+        // Skip if already comparing
+        if (WikiTruth.isComparing) {
+            return;
+        }
+        
+        WikiTruth.isComparing = true;
+        
+        try {
+            // Prepare the AI prompt based on the mode
+            let prompt = '';
+            let aiModel = 'gpt-4o'; // Using most capable model
+            
+            // Get content container based on mode
+            let contentElement;
+            let shareElement;
+            
+            switch (mode) {
+                case 'summary':
+                    contentElement = summaryContent;
+                    shareElement = summaryShare;
+                    prompt = `Compare the following Wikipedia article versions in different languages and provide a detailed summary of key factual discrepancies only. Present the comparison in a natural literary storytelling style. Focus on important factual differences, contradictions, or missing information between versions.\n\n`;
+                    break;
+                case 'full':
+                    contentElement = fullContent;
+                    shareElement = fullShare;
+                    prompt = `Compare the following Wikipedia article versions in different languages and provide a comprehensive analysis of all differences. Present the comparison in a natural literary storytelling style, organizing differences by topic or section.\n\n`;
+                    break;
+                case 'funny':
+                    contentElement = funnyContent;
+                    shareElement = funnyShare;
+                    prompt = `Write a sarcastic, brutally witty roast based on the differences between these Wikipedia article versions in different languages. Make it absurd, sharp, and humorous - a "level 100 roast of death" that highlights the contradictions and biases in an entertaining way.\n\n`;
+                    break;
+                default:
+                    throw new Error('Invalid comparison mode');
+            }
+            
+            // Add article content to prompt
+            Object.entries(articles).forEach(([langCode, article]) => {
+                prompt += `${langCode.toUpperCase()} VERSION: "${article.title}"\n${article.content}\n\n`;
+            });
+            
+            // Show loading indicator
+            contentElement.innerHTML = `
+                <div class="loader text-center">
+                    <div class="spinner-border text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2">Analyzing ${Object.keys(articles).length} article versions...</p>
+                </div>
+            `;
+            
+            // Make the AI request
+            const response = await puter.ai.chat(prompt, { model: aiModel });
+            
+            // Store the result
+            WikiTruth.comparisonResults[mode] = response;
+            
+            // Display the result
+            contentElement.innerHTML = `<div class="result-text">${formatOutput(response)}</div>`;
+            
+            // Show sharing options
+            if (shareElement) {
+                shareElement.classList.remove('d-none');
+            }
+            
+        } catch (error) {
+            console.error(`Error in ${mode} comparison:`, error);
+            
+            // Get the relevant content element
+            const contentElement = (mode === 'summary') ? summaryContent : 
+                                  (mode === 'full') ? fullContent : funnyContent;
+            
+            // Display error message
+            contentElement.innerHTML = `
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-circle me-2"></i>
+                    Failed to generate comparison. Please try again.
+                    <div class="mt-2 small">${error.message || 'Unknown error'}</div>
+                </div>
+                <button class="btn btn-outline-primary mt-3 retry-btn" data-mode="${mode}">
+                    <i class="fas fa-redo me-2"></i> Retry
+                </button>
+            `;
+            
+            // Add retry button functionality
+            const retryBtn = contentElement.querySelector('.retry-btn');
+            if (retryBtn) {
+                retryBtn.addEventListener('click', function() {
+                    runComparison(this.dataset.mode);
+                });
+            }
+        } finally {
+            WikiTruth.isComparing = false;
+        }
+    }
+    
+    /**
+     * Format AI output for better readability
+     * @param {string} text - Raw comparison text
+     * @returns {string} - Formatted HTML
+     */
+    function formatOutput(text) {
+        // Convert line breaks to HTML
+        let formatted = text.replace(/\n\n/g, '</p><p>').replace(/\n/g, '<br>');
+        
+        // Wrap in paragraph tags if needed
+        if (!formatted.startsWith('<p>')) {
+            formatted = `<p>${formatted}</p>`;
+        }
+        
+        return formatted;
+    }
+    
+    /**
+     * Translate comparison output to selected language
+     * @param {string} mode - Comparison mode
+     * @param {string} targetLang - Target language code
+     */
+    async function translateOutput(mode, targetLang) {
+        // Skip if already in English or no content
+        if (targetLang === 'en' || !WikiTruth.comparisonResults[mode]) {
+            return;
+        }
+        
+        // Get content element
+        const contentElement = (mode === 'summary') ? summaryContent :
+                              (mode === 'full') ? fullContent : funnyContent;
+        
+        // Show translation in progress
+        contentElement.innerHTML = `
+            <div class="loader text-center">
+                <div class="spinner-border text-primary" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <p class="mt-2">Translating to ${getLanguageName(targetLang)}...</p>
+            </div>
+        `;
+        
+        try {
+            // Get original text
+            const originalText = WikiTruth.comparisonResults[mode];
+            
+            // Translate using WikiTruth utility function
+            const translatedText = await WikiTruth.translateText(originalText, targetLang);
+            
+            // Display translated text
+            contentElement.innerHTML = `<div class="result-text">${formatOutput(translatedText)}</div>`;
+            
+        } catch (error) {
+            console.error(`Translation error (${mode}):`, error);
+            
+            // Show error and restore original content
+            contentElement.innerHTML = `
+                <div class="alert alert-warning mb-3">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Translation failed. Showing original English version.
+                </div>
+                <div class="result-text">${formatOutput(WikiTruth.comparisonResults[mode])}</div>
+            `;
+        }
+    }
+    
+    /**
+     * Get language name from language code
+     * @param {string} langCode - Language code (e.g., 'en', 'es')
+     * @returns {string} - Language name
+     */
+    function getLanguageName(langCode) {
+        const languages = {
+            'en': 'English',
+            'es': 'Spanish',
+            'fr': 'French',
+            'de': 'German',
+            'ru': 'Russian',
+            'zh': 'Chinese',
+            'ja': 'Japanese',
+            'ar': 'Arabic',
+            'hi': 'Hindi',
+            'pt': 'Portuguese',
+            'it': 'Italian',
+            'ko': 'Korean'
+        };
+        
+        return languages[langCode] || langCode.toUpperCase();
+    }
+});

@@ -1,0 +1,241 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="comparison-container">
+    <h1 class="mb-4">Comparing Article Versions</h1>
+    
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <ul class="nav nav-tabs card-header-tabs" id="comparison-tabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="summary-tab" data-bs-toggle="tab" data-bs-target="#summary" type="button" role="tab" aria-controls="summary" aria-selected="true">
+                                <i class="fas fa-list me-2"></i> Summary
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="full-tab" data-bs-toggle="tab" data-bs-target="#full" type="button" role="tab" aria-controls="full" aria-selected="false">
+                                <i class="fas fa-file-alt me-2"></i> Full Differences
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="funny-tab" data-bs-toggle="tab" data-bs-target="#funny" type="button" role="tab" aria-controls="funny" aria-selected="false">
+                                <i class="fas fa-laugh-squint me-2"></i> Funny Mode
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body">
+                    <div class="tab-content" id="comparison-tab-content">
+                        <!-- Summary Tab -->
+                        <div class="tab-pane fade show active" id="summary" role="tabpanel" aria-labelledby="summary-tab">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h3>Key Factual Discrepancies</h3>
+                                <div class="comparison-controls">
+                                    <select id="summary-output-language" class="form-select form-select-sm output-language-select me-2">
+                                        <option value="en" selected>English</option>
+                                        <option value="es">Spanish</option>
+                                        <option value="fr">French</option>
+                                        <option value="de">German</option>
+                                        <option value="ru">Russian</option>
+                                        <option value="zh">Chinese</option>
+                                        <option value="ja">Japanese</option>
+                                        <option value="ar">Arabic</option>
+                                        <option value="pt">Portuguese</option>
+                                    </select>
+                                    <button class="btn btn-sm btn-outline-primary export-btn" data-mode="summary">
+                                        <i class="fas fa-download me-1"></i> Export
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="summary-content" class="comparison-content">
+                                <div class="loader text-center">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <p class="mt-2">Analyzing differences...</p>
+                                </div>
+                            </div>
+                            <div id="summary-share" class="share-options mt-3 d-none">
+                                <h5>Share this comparison:</h5>
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-outline-primary share-btn" data-platform="twitter" data-mode="summary">
+                                        <i class="fab fa-twitter"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary share-btn" data-platform="linkedin" data-mode="summary">
+                                        <i class="fab fa-linkedin"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary share-btn" data-platform="reddit" data-mode="summary">
+                                        <i class="fab fa-reddit"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary share-btn" data-platform="telegram" data-mode="summary">
+                                        <i class="fab fa-telegram"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary share-btn" data-platform="whatsapp" data-mode="summary">
+                                        <i class="fab fa-whatsapp"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary share-btn" data-platform="email" data-mode="summary">
+                                        <i class="fas fa-envelope"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary share-btn" data-platform="copy" data-mode="summary">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Full Differences Tab -->
+                        <div class="tab-pane fade" id="full" role="tabpanel" aria-labelledby="full-tab">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h3>Complete Article Comparison</h3>
+                                <div class="comparison-controls">
+                                    <select id="full-output-language" class="form-select form-select-sm output-language-select me-2">
+                                        <option value="en" selected>English</option>
+                                        <option value="es">Spanish</option>
+                                        <option value="fr">French</option>
+                                        <option value="de">German</option>
+                                        <option value="ru">Russian</option>
+                                        <option value="zh">Chinese</option>
+                                        <option value="ja">Japanese</option>
+                                        <option value="ar">Arabic</option>
+                                        <option value="pt">Portuguese</option>
+                                    </select>
+                                    <button class="btn btn-sm btn-outline-primary export-btn" data-mode="full">
+                                        <i class="fas fa-download me-1"></i> Export
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="full-content" class="comparison-content">
+                                <div class="loader text-center">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <p class="mt-2">Generating comprehensive comparison...</p>
+                                </div>
+                            </div>
+                            <div id="full-share" class="share-options mt-3 d-none">
+                                <h5>Share this comparison:</h5>
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-outline-primary share-btn" data-platform="twitter" data-mode="full">
+                                        <i class="fab fa-twitter"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary share-btn" data-platform="linkedin" data-mode="full">
+                                        <i class="fab fa-linkedin"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary share-btn" data-platform="reddit" data-mode="full">
+                                        <i class="fab fa-reddit"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary share-btn" data-platform="telegram" data-mode="full">
+                                        <i class="fab fa-telegram"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary share-btn" data-platform="whatsapp" data-mode="full">
+                                        <i class="fab fa-whatsapp"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary share-btn" data-platform="email" data-mode="full">
+                                        <i class="fas fa-envelope"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary share-btn" data-platform="copy" data-mode="full">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Funny Mode Tab -->
+                        <div class="tab-pane fade" id="funny" role="tabpanel" aria-labelledby="funny-tab">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h3>Sarcastic Roast of Differences</h3>
+                                <div class="comparison-controls">
+                                    <select id="funny-output-language" class="form-select form-select-sm output-language-select me-2">
+                                        <option value="en" selected>English</option>
+                                        <option value="es">Spanish</option>
+                                        <option value="fr">French</option>
+                                        <option value="de">German</option>
+                                        <option value="ru">Russian</option>
+                                        <option value="zh">Chinese</option>
+                                        <option value="ja">Japanese</option>
+                                        <option value="ar">Arabic</option>
+                                        <option value="pt">Portuguese</option>
+                                    </select>
+                                    <button class="btn btn-sm btn-outline-primary export-btn" data-mode="funny">
+                                        <i class="fas fa-download me-1"></i> Export
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="funny-content" class="comparison-content">
+                                <div class="loader text-center">
+                                    <div class="spinner-border text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                    <p class="mt-2">Preparing the roast...</p>
+                                </div>
+                            </div>
+                            <div id="funny-share" class="share-options mt-3 d-none">
+                                <h5>Share this comparison:</h5>
+                                <div class="btn-group" role="group">
+                                    <button type="button" class="btn btn-outline-primary share-btn" data-platform="twitter" data-mode="funny">
+                                        <i class="fab fa-twitter"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary share-btn" data-platform="linkedin" data-mode="funny">
+                                        <i class="fab fa-linkedin"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary share-btn" data-platform="reddit" data-mode="funny">
+                                        <i class="fab fa-reddit"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary share-btn" data-platform="telegram" data-mode="funny">
+                                        <i class="fab fa-telegram"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary share-btn" data-platform="whatsapp" data-mode="funny">
+                                        <i class="fab fa-whatsapp"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary share-btn" data-platform="email" data-mode="funny">
+                                        <i class="fas fa-envelope"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-primary share-btn" data-platform="copy" data-mode="funny">
+                                        <i class="fas fa-copy"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Selected Articles</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        {% for lang_code, article in article_contents.items() %}
+                        <div class="col-md-6 mb-3">
+                            <div class="article-card">
+                                <h4 class="article-language">{{ lang_code | upper }}: {{ article.title }}</h4>
+                                <div class="article-preview">
+                                    <p>{{ article.content[:300] }}{% if article.content|length > 300 %}...{% endif %}</p>
+                                </div>
+                                <a href="https://{{ lang_code }}.wikipedia.org/wiki/{{ article.title|replace(' ', '_') }}" 
+                                   target="_blank" class="btn btn-sm btn-outline-secondary">
+                                    View original article
+                                </a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/comparison.js') }}"></script>
+<script src="{{ url_for('static', filename='js/export.js') }}"></script>
+<script src="{{ url_for('static', filename='js/share.js') }}"></script>
+{% endblock %}
