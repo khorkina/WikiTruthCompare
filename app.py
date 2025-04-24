@@ -33,6 +33,8 @@ def search():
     query = request.args.get('q', '')
     lang = request.args.get('lang', 'en')
     
+    logger.info(f"Search request - Query: '{query}', Language: '{lang}'")
+    
     if not query:
         return jsonify([])
     
@@ -49,15 +51,20 @@ def search():
         
         # Use the appropriate language-specific Wikipedia API endpoint
         api_endpoint = f"https://{lang}.wikipedia.org/w/api.php"
+        logger.info(f"Searching Wikipedia API: {api_endpoint} with query: {query}")
         
         response = requests.get(api_endpoint, params=params)
         response.raise_for_status()  # Raise exception for 4XX/5XX responses
         data = response.json()
         
+        # Log the raw response for debugging
+        logger.debug(f"Wikipedia API response: {json.dumps(data)[:500]}...")
+        
         # Extract and format search results
         results = []
         if 'query' in data and 'search' in data['query']:
             search_results = data['query']['search']
+            logger.info(f"Found {len(search_results)} results for '{query}' in {lang}")
             
             for article in search_results:
                 title = article.get('title', '')
@@ -77,11 +84,19 @@ def search():
                     'snippet': article.get('snippet', ''),
                     'lang': lang
                 })
+        else:
+            # Log why we didn't get results
+            logger.warning(f"No results found in API response. Keys in response: {list(data.keys())}")
+            if 'query' in data:
+                logger.warning(f"Keys in query: {list(data['query'].keys())}")
         
         return jsonify(results)
     
     except Exception as e:
         logger.error(f"Error searching Wikipedia: {str(e)}")
+        # Log more detailed error info
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
         return jsonify({'error': str(e)}), 500
 
 @app.route('/languages/<path:article_path>')
@@ -259,14 +274,34 @@ def compare_articles():
 @app.route('/comparison')
 def show_comparison():
     """Show the comparison page with the selected articles"""
-    article_contents = session.get('article_contents', {})
+    # Get the comparison ID from session
+    comparison_id = session.get('comparison_id')
     
-    if not article_contents:
-        return redirect(url_for('index'))
+    if not comparison_id:
+        # For backward compatibility, check if we have article_contents in session
+        article_contents = session.get('article_contents', {})
+        warnings = session.get('comparison_warnings', [])
+        
+        if not article_contents:
+            return redirect(url_for('index'))
+            
+        return render_template('comparison.html', 
+                              article_contents=article_contents,
+                              warnings=warnings)
     
-    # Get any warnings to display
-    warnings = session.pop('comparison_warnings', [])
+    # Get cached article contents using the ID
+    cached_data = article_cache.get(comparison_id)
     
+    if not cached_data:
+        return render_template('error.html',
+                             error_title="Comparison Expired",
+                             error_message="This comparison has expired or was not found. Please try again.")
+    
+    # Extract data from cache
+    article_contents = cached_data.get('contents', {})
+    warnings = cached_data.get('warnings', [])
+    
+    # Render the comparison page
     return render_template('comparison.html', 
                           article_contents=article_contents,
                           warnings=warnings)
