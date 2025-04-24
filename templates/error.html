@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="error-container text-center my-5">
+        <div class="error-icon mb-4">
+            <i class="fas fa-exclamation-circle text-danger display-1"></i>
+        </div>
+        
+        <h1 class="error-title mb-3">{{ error_title | default('Error') }}</h1>
+        
+        <div class="error-message lead mb-4">
+            {{ error_message | default('An unexpected error occurred.') }}
+        </div>
+        
+        <div class="error-actions mt-4">
+            <a href="{{ url_for('index') }}" class="btn btn-primary btn-lg">
+                <i class="fas fa-home me-2"></i> Return to Homepage
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

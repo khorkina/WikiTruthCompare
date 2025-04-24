@@ -174,55 +174,112 @@ def get_languages(article_path):
 
 @app.route('/compare', methods=['POST'])
 def compare_articles():
-    """Compare selected language versions of an article"""
+    """Compare selected language versions of an article with improved handling"""
     try:
         selected_languages = request.form.getlist('languages')
         
         if len(selected_languages) < 2:
-            return jsonify({'error': 'Please select at least two languages to compare'}), 400
+            return render_template('error.html', 
+                                 error_title="Selection Error",
+                                 error_message="Please select at least two languages to compare.")
         
         # Get article content for each selected language
         article_contents = {}
+        errors = []
         
         for lang_info in selected_languages:
-            lang, title = lang_info.split('|', 1)
-            
-            # Build API URL for fetching article content
-            params = {
-                'action': 'query',
-                'prop': 'extracts',
-                'exintro': 1,
-                'explaintext': 1,
-                'titles': title,
-                'format': 'json',
-            }
-            
-            api_endpoint = f"https://{lang}.wikipedia.org/w/api.php"
-            response = requests.get(api_endpoint, params=params)
-            data = response.json()
-            
-            # Extract content
-            pages = data.get('query', {}).get('pages', {})
-            if pages:
+            try:
+                # Split the language code and title
+                parts = lang_info.split('|', 1)
+                if len(parts) != 2:
+                    logger.warning(f"Invalid language format: {lang_info}")
+                    continue
+                    
+                lang, title = parts
+                
+                # Build API URL for fetching full article content (not just intro)
+                params = {
+                    'action': 'query',
+                    'prop': 'extracts',
+                    'explaintext': 1,       # Get plain text content
+                    'exsectionformat': 'plain', # Format sections as plain text
+                    'titles': title,
+                    'format': 'json',
+                }
+                
+                # For longer articles, don't limit to intro only
+                # If we're comparing full content, get more content
+                if len(selected_languages) <= 3:  # For fewer languages, get more content
+                    params.pop('exintro', None)  # Remove intro limitation if present
+                else:
+                    params['exintro'] = 1  # Limit to intro for many languages to prevent performance issues
+                
+                api_endpoint = f"https://{lang}.wikipedia.org/w/api.php"
+                response = requests.get(api_endpoint, params=params)
+                response.raise_for_status()
+                data = response.json()
+                
+                # Extract content
+                pages = data.get('query', {}).get('pages', {})
+                if not pages:
+                    errors.append(f"No content found for {title} ({lang.upper()})")
+                    continue
+                
                 page_id = list(pages.keys())[0]
+                if int(page_id) < 0:  # Negative page ID means article doesn't exist
+                    errors.append(f"Article '{title}' not found in {lang.upper()} Wikipedia")
+                    continue
+                    
                 extract = pages[page_id].get('extract', '')
+                
+                # If extract is too short, it might indicate an issue
+                if len(extract) < 50:
+                    logger.warning(f"Very short content for {title} ({lang}): {len(extract)} chars")
+                
+                # Get language name for display
+                lang_name_map = {
+                    'en': 'English', 'es': 'Spanish', 'fr': 'French', 'de': 'German', 
+                    'ru': 'Russian', 'zh': 'Chinese', 'ja': 'Japanese', 'ar': 'Arabic',
+                    'hi': 'Hindi', 'pt': 'Portuguese', 'it': 'Italian', 'ko': 'Korean'
+                }
+                lang_name = lang_name_map.get(lang, lang.upper())
                 
                 # Store content with language info
                 article_contents[lang] = {
                     'title': title,
                     'content': extract,
-                    'lang_code': lang
+                    'lang_code': lang,
+                    'lang_name': lang_name
                 }
+                
+            except Exception as lang_error:
+                logger.error(f"Error processing {lang_info}: {str(lang_error)}")
+                errors.append(f"Error processing {lang_info}: {str(lang_error)}")
+        
+        # Check if we have enough content to compare
+        if len(article_contents) < 2:
+            error_msg = "Couldn't retrieve enough article versions to compare"
+            if errors:
+                error_msg += ": " + "; ".join(errors)
+            return render_template('error.html', 
+                                 error_title="Content Retrieval Error",
+                                 error_message=error_msg)
         
         # Store article contents in session for the comparison page
         session['article_contents'] = article_contents
+        
+        # Store any warnings to show on the comparison page
+        if errors:
+            session['comparison_warnings'] = errors
         
         # Redirect to the comparison page
         return redirect(url_for('show_comparison'))
     
     except Exception as e:
         logger.error(f"Error comparing articles: {str(e)}")
-        return jsonify({'error': str(e)}), 500
+        return render_template('error.html', 
+                             error_title="Comparison Error",
+                             error_message=f"An error occurred while comparing articles: {str(e)}")
 
 @app.route('/comparison')
 def show_comparison():
@@ -232,8 +289,12 @@ def show_comparison():
     if not article_contents:
         return redirect(url_for('index'))
     
+    # Get any warnings to display
+    warnings = session.pop('comparison_warnings', [])
+    
     return render_template('comparison.html', 
-                          article_contents=article_contents)
+                          article_contents=article_contents,
+                          warnings=warnings)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
