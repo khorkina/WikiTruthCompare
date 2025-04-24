@@ -1,0 +1,13 @@
+flask==2.3.3
+flask-sqlalchemy==3.1.1
+gunicorn==23.0.0
+psycopg2-binary==2.9.9
+requests==2.31.0
+trafilatura==1.6.4
+email-validator==2.1.0
+werkzeug==2.3.7
+urllib3==2.0.7
+certifi>=2023.7.22
+itsdangerous==2.1.2
+Jinja2==3.1.2
+MarkupSafe==2.1.3
