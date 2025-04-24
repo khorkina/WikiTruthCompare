@@ -21,38 +21,42 @@ const WikiTruth = {
         url: window.location.href
     },
     
-    // Translation utility function
+    // Translation utility function using Puter.js
     translateText: async function(text, targetLang = 'en') {
         if (!text || targetLang === 'en') {
             return text; // No translation needed
         }
         
         try {
-            // Simulate Google Translate API (would be implemented on server-side in production)
-            // We're using Puter.js here to simulate translation for demo purposes
+            // Using Puter.js for translation (April 2025 version)
             const prompt = `Translate the following text to ${targetLang}:\n\n${text}`;
             
+            // According to Puter.js April 2025 documentation, puter.ai.chat() returns text directly
+            // Available models: gpt-4.1, gpt-4.1-mini, gpt-4.5-preview, gpt-4o, gpt-4o-mini, o1, o1-mini, o3, o3-mini
             const response = await puter.ai.chat(prompt, {
-                model: "gpt-4o"
+                model: "gpt-4o" // Using the latest model available in Puter.js
             });
             
-            // Handle different response formats from Puter.js
+            // Process the response from Puter.js
             let translatedText = '';
             if (typeof response === 'string') {
                 translatedText = response;
-            } else if (response && typeof response.text === 'string') {
-                translatedText = response.text;
-            } else if (response && typeof response.content === 'string') {
-                translatedText = response.content;
             } else {
-                // Convert to string as a fallback
-                translatedText = String(response || text);
-                console.log('Unexpected translation response format:', response);
+                // For backward compatibility or unexpected response formats
+                console.log('Processing Puter.js translation response format:', response);
+                if (response && typeof response.text === 'string') {
+                    translatedText = response.text;
+                } else if (response && typeof response.content === 'string') {
+                    translatedText = response.content;
+                } else {
+                    // Convert to string as a fallback
+                    translatedText = String(response || text);
+                }
             }
             
             return translatedText;
         } catch (error) {
-            console.error('Translation error:', error);
+            console.error('Translation error with Puter.js:', error);
             return text; // Return original text on error
         }
     },

@@ -94,7 +94,9 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             // Prepare the AI prompt based on the mode
             let prompt = '';
-            let aiModel = 'gpt-4o'; // Using most capable model
+            // Using Puter.js models - April 2025 version
+            // Available models: gpt-4.1, gpt-4.1-mini, gpt-4.5-preview, gpt-4o, gpt-4o-mini, o1, o1-mini, o3, o3-mini
+            let aiModel = 'gpt-4o'; // Using most capable model by default
             
             // Get content container based on mode
             let contentElement;
@@ -135,21 +137,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 </div>
             `;
             
-            // Make the AI request
+            // Make the AI request using Puter.js (April 2025 version)
+            // According to documentation, puter.ai.chat() returns text directly
             const response = await puter.ai.chat(prompt, { model: aiModel });
             
-            // Handle different response formats from Puter.js
+            // Handle the response - Puter.js should return a string directly
             let resultText = '';
             if (typeof response === 'string') {
                 resultText = response;
-            } else if (response && typeof response.text === 'string') {
-                resultText = response.text;
-            } else if (response && typeof response.content === 'string') {
-                resultText = response.content;
             } else {
-                // Convert to string as a fallback
-                resultText = String(response || 'No response received');
-                console.log('Unexpected response format:', response);
+                // For backward compatibility or unexpected response formats
+                console.log('Processing Puter.js response format:', response);
+                if (response && typeof response.text === 'string') {
+                    resultText = response.text;
+                } else if (response && typeof response.content === 'string') {
+                    resultText = response.content;
+                } else {
+                    // Convert to string as a fallback
+                    resultText = String(response || 'No response received');
+                }
             }
             
             // Store the result
