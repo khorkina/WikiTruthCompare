@@ -1,0 +1,79 @@
+Create a Flask web application called WikiTruth, designed with a modern minimalist aesthetic inspired by the Ko-fi platform. The color palette is limited to white, black, beige, light red, and sky blue. Using puter.js to compare articles and write new one based on articles language versions and its differenses
+
+Core Functionality:
+Search Flow:
+
+The user selects their preferred query language and enters a search query.
+
+As they type, live Wikipedia article suggestions appear in real-time.
+
+Upon selecting an article, the user is taken to a new screen showing all the available languages for that article.
+
+Language Selection and Comparison:
+
+The user must select at least two languages (or more, if desired).
+
+Once languages are selected, the user clicks "Compare Articles".
+
+The app uses Google Translate API to translate all selected articles into English (target language).
+
+Then, using Putter.js, it performs a fact-level comparison between the translations. (puter.ai.chat(
+            "Compare all versions of article in different language and provide a detailed description of its differences", 
+            { model: "gpt-4o" }
+        ).then(response => {
+            puter.print("<h2>Using gpt-4o model</h2>");
+            puter.print(response);
+        });)
+
+Comparison Modes:
+
+The comparison is run through a pre-defined model (which will be specified in the code).
+
+Two output modes are available:
+
+Summary: Key factual discrepancies only.
+
+Full Differences: Complete comparison of the entire article content.
+
+Both should be presented in natural, literary storytelling style. For example:
+
+“In the English version of the article, it is stated that X happened in 2003. However, the Russian version omits this entirely, while the German version claims it occurred in 2001.”
+
+Multilingual Output:
+
+Users can choose the language of the output (summary, full, or funny mode).
+
+All outputs should be translatable into any major language supported by the Google Translate API.
+
+Funny Mode:
+
+A "Funny Mode" button generates a sarcastic roast-style version of the article comparison.
+
+This version should be absurd, sharp, and brutally witty — "level 100 roast of death".
+
+This version should also be available for translation into other languages.
+
+. (puter.ai.chat(
+            "Write a roast based on the differences between its language versions. Level of details 100/10", 
+            { model: "gpt-4o" }
+        ).then(response => {
+            puter.print("<h2>Using gpt-4o model</h2>");
+            puter.print(response);
+        });)
+Export and Sharing:
+
+All output types (Summary, Full Differences, Funny Mode) should be downloadable in DOCS format.
+
+There should be a Share option for each result via:
+
+X (Twitter), LinkedIn, Reddit, Telegram, WhatsApp, Gmail, or by Copying a link.
+
+
+ChatGPT сказал:
+​
+
+
+
+
+
+
