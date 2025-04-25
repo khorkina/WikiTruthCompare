@@ -106,17 +106,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 case 'summary':
                     contentElement = summaryContent;
                     shareElement = summaryShare;
-                    prompt = `Compare the following Wikipedia article versions in different languages and provide a detailed summary of key factual discrepancies only. Present the comparison in a natural literary storytelling style. Focus on important factual differences, contradictions, or missing information between versions.\n\n`;
+                    prompt = `Compare all versions of the article in different languages. Identify their main differences and provide a summary that includes all the most important distinctions between these articles.\n\n`;
                     break;
                 case 'full':
                     contentElement = fullContent;
                     shareElement = fullShare;
-                    prompt = `Compare the following Wikipedia article versions in different languages and provide a comprehensive analysis of all differences. Present the comparison in a natural literary storytelling style, organizing differences by topic or section.\n\n`;
+                    prompt = `Compare all language versions of the article and provide a detailed explanation of the differences between them. You should identify all discrepancies and indicate in which language versions they occur. Then, write a new article that includes all these inconsistencies. You will do this step by step, starting just like a typical Wikipedia article, but along the way, you will note: “In this language version, it states that..., while in this version, it says that...,” clarifying how the person or event is portrayed differently across versions.\n\n`;
                     break;
                 case 'funny':
                     contentElement = funnyContent;
                     shareElement = funnyShare;
-                    prompt = `Write a sarcastic, brutally witty roast based on the differences between these Wikipedia article versions in different languages. Make it absurd, sharp, and humorous - a "level 100 roast of death" that highlights the contradictions and biases in an entertaining way.\n\n`;
+                    prompt = `Based on the identified differences between the language versions of the article, write a sarcastic roast — Level of Details: 100/10 — that ironically highlights these discrepancies and why they might exist. Subtly point out how Wikipedia content is shaped (read: controlled) by moderators, and how these differences seem almost tailor-made to divide us neatly into our cozy little language-based echo chambers.\n\n`;
                     break;
                 default:
                     throw new Error('Invalid comparison mode');
